@@ -10,7 +10,6 @@ import configparser
 from pathlib import Path
 import argparse
 
-
 ################################OPTIONS PROCESSING##########################
 
 def langcheck(lang):
@@ -40,7 +39,7 @@ parser.add_argument('--noupload', '-n',  dest='no_upload', action='store_true', 
 parser.add_argument('--m4a', '-m', dest='m4a_path', help='destination folder for m4a files')
 parser.add_argument('--torrent', dest='torrent_path', default='torrents', help='torrent output folder')
 parser.add_argument('--verbose', '-v', dest='verbose', action='store_true', help='verbose mode', default=False)
-parser.add_argument('--info', action='store_true', help='only fetch and display book info', default=False)
+parser.add_argument('--info', '-i', action='store_true', help='only fetch and display book info', default=False)
 group = parser.add_argument_group('torrent options')
 group.add_argument('--anon', action='store_true', help='make the bibliotik torrent anonymous', default=False)
 group.add_argument('--dont_notify', action='store_true', help='notify of new comments', default=False)
@@ -74,8 +73,7 @@ temp = glob(args.files)
 files = []
 
 for f in temp:
-    if os.path.isfile(f) and os.path.splitext(f)[1] == '.aax': 
-        files.append(f)
+    if os.path.isfile(f) and os.path.splitext(f)[1] == '.aax': files.append(f)
      
 if len(files) == 0:
     print('no aax files to process')
@@ -86,8 +84,7 @@ if not activation_bytes and not activation:
     print('must provide audible activation bytes either in cfg or with --activation') 
     sys.exit()
 
-if activation: 
-    activation_bytes = activation
+if activation: activation_bytes = activation
 
 username = config['settings']['username'].strip()
 password = config['settings']['password'].strip()
@@ -157,17 +154,15 @@ for filename in files:
                     result['bitrate'] = str(bitrate)
                     
             break
-    if not args.info:
-        while 'fiction' not in result['tags'] and 'nonfiction' not in \
-            result['tags'] and 'poetry' not in result['tags']:        
-                print('\n***each book must have at least one of the following tags: fiction, nonfiction, poetry***\n')
-                print('current book:', result['title'], '\n')
-                print('use commas to separate tags \n')
-                x = input('Enter tags:').lower()
-                x = re.sub('[^a-zA-Z0-9_ ,.]','', x)
-                result['tags'] = [s.strip() for s in x.split(',')]
 
-        result['tags'] = ', '.join(result['tags'])
+    while not args.info and 'fiction' not in result['tags'] and 'nonfiction' not in result['tags'] and 'poetry' not in result['tags']:        
+        print('\n***each book must have at least one of the following tags: fiction, nonfiction, poetry***\n')
+        print('current book:', result['title'], '\n')
+        print('use commas to separate tags \n')
+        x = input('Enter tags:').lower()
+        result['tags'] = [s.strip() for s in x.split(',')]
+
+    result['tags'] = ', '.join(result['tags'])
 
 ########################### DECRYPTING AAX ############################
     if not args.info:
@@ -187,9 +182,7 @@ for filename in files:
         else:
             output = subprocess.run(cmd, capture_output=True, text=True)
         print('decrypted to', path)
-        if args.cleanup:
-            os.remove(filename_aax)
-            print('cleaning up, removing .aax')
+
 
         if args.no_upload:
             print('not uploading, finished processing', result['title'])
@@ -271,7 +264,8 @@ for filename in files:
 ######################## BIBLIOTIK ##################################
 
     params = {'username': username, 'password': password, 'returnto': '/upload/audiobooks'}
-    request = mechanize.Request('https://bibliotik.me/upload/audiobooks', data=params)
+    request = mechanize.Request('https://bibliotik.me/upload/audiobooks',
+        data=params)
 
     print('\nlogging in to bibliotik')
     try:
@@ -292,7 +286,9 @@ for filename in files:
     
     if  os.path.isfile(full_torrent):
         os.remove(full_torrent)
+    #print('mktorrent params:', passkey, filename_m4a, torrent_name, output_name)    
     cmd = 'mktorrent -p -a "{}" -c "Emperor protects!" -n "{}" -o "{}" "{}"'.format(passkey, filename_m4a, torrent_name, output_name)
+    #print(cmd)    
 
     print('creating torrent:', torrent_name)
     
@@ -301,6 +297,9 @@ for filename in files:
     else:
         output = subprocess.run(cmd, capture_output=True, text=True).stderr
         
+    
+    
+
     full_torrent = Path(torrent_path).joinpath(torrent_name)
     os.rename(Path.cwd().joinpath( torrent_name), full_torrent)
     print('moving .torrent to', str(torrent_path))
@@ -341,7 +340,24 @@ for filename in files:
     if args.anon: br.find_control('AnonymousField').items[0].selected = True
 
     uploaded = br.submit()
-    if uploaded.code == 200:
-        print('uploaded', result['title'])
-        print('========================\n\n')
+    html = uploaded.read()
+    soup = BeautifulSoup(html, 'html.parser')
+    if soup.find('ul', id='formerrorlist'):
+        errorlist = soup.find('ul', id='formerrorlist')
+        soup = BeautifulSoup(str(errorlist), 'html.parser')
+        tags = soup.find_all('li')
+        print('torrent upload failed for the following reason(s):')
+        print('\n**************************************************')
+        for tag in tags:        
+            print(tag.text)
+        print('**************************************************')
+        sys.exit()
+    else:
+        if uploaded.code == 200:
+            print('uploaded', result['title'])
+            print('========================\n\n')
+        if args.cleanup:
+            os.remove(filename_aax)
+            print('cleaning up, removing .aax')
+
 
