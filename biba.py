@@ -233,12 +233,6 @@ for filename in files:
         if '/search?searchProvider=' in link.url:
             print('publisher:', link.text)
             result['publisher'] = link.text.strip()
-    """     if soup.find(class_ = 'publisherLabel').string:
-        publisher = soup.find(class_ = 'publisherLabel').string
-        publisher = publisher.replace('Publisher:', '')
-        publisher = publisher.strip()
-        result['publisher'] = publisher 
-        """
 
     series = soup.find(class_ = 'seriesLabel')
     if series:
