@@ -229,14 +229,27 @@ for filename in files:
     narrators = soup.find(class_ = 'narratorLabel').text
     title = soup.find('h1', class_ = 'bc-heading').text
 
+    for link in br.links():
+        if '/search?searchProvider=' in link.url:
+            print('publisher:', link.text)
+            result['publisher'] = link.text.strip()
+    """     if soup.find(class_ = 'publisherLabel').string:
+        publisher = soup.find(class_ = 'publisherLabel').string
+        publisher = publisher.replace('Publisher:', '')
+        publisher = publisher.strip()
+        result['publisher'] = publisher 
+        """
+
     series = soup.find(class_ = 'seriesLabel')
     if series:
         series = series.text
         series = series.replace('Series:', '')
         series = series.strip()
         title = title + ' (' + series + ')'
-        print(title)
-    result['title'] = title
+        print('part of series, full title:', title)
+        result['title'] = title
+	
+
 
     narrators = narrators.replace('Narrated by:', '')
     narrators = [name.strip() for name in narrators.split(",")]
@@ -246,9 +259,17 @@ for filename in files:
     description_soup = BeautifulSoup(str(description), 'html.parser')
     desc:str = '' 
     for p in description_soup.find_all('p'):
-        if p.string is not None:  desc = desc + p.string.strip() + '\n\n' 
+        text:str = ''
+        for t in p.stripped_strings:
+            text += ' ' + t
+            text = text.replace('\n', ' ')
+            text = text.strip()
+            print(t)
+        
+        desc = desc + text + '\n\n' 
 
-    result['description'] = desc.rstrip()
+
+    result['description'] = desc
 
     img_set = soup('img')
     for img in img_set:
