@@ -88,6 +88,7 @@ if activation: activation_bytes = activation
 
 username = config['settings']['username'].strip()
 password = config['settings']['password'].strip()
+qbpath = config['settings']['qbpath'].strip()
 
 if not username or not password:
     print('can not proceed w/o bib credentials, edit the config file')
@@ -167,7 +168,7 @@ for filename in files:
 ########################### DECRYPTING AAX ############################
     if not args.info:
         print('decrypting', filename)
-        print('migth take some time, use verbose mode for details')
+        print('might take some time, use verbose mode for details')
         path = Path(filename).parent.expanduser().resolve()
         if args.m4a_path: 
             path = Path(args.m4a_path).expanduser().resolve() 
@@ -228,13 +229,17 @@ for filename in files:
 
     narrators = soup.find(class_ = 'narratorLabel').text
     title = soup.find('h1', class_ = 'bc-heading').text
+    result['title'] = title
 
-    for link in br.links():
-        if '/search?searchProvider=' in link.url:
-            print('publisher:', link.text)
-            result['publisher'] = link.text.strip()
+    if soup.find('a', href=re.compile('search\?searchProvider')):
+        t = soup.find('a', href=re.compile('search\?searchProvider'))
+        publisher = t.string.strip()
+        print(publisher)
+        print('publisher:', publisher)
+        result['publisher'] = publisher
 
     series = soup.find(class_ = 'seriesLabel')
+
     if series:
         series = series.text
         series = series.replace('Series:', '')
@@ -243,14 +248,13 @@ for filename in files:
         print('part of series, full title:', title)
         result['title'] = title
 	
-
-
     narrators = narrators.replace('Narrated by:', '')
     narrators = [name.strip() for name in narrators.split(",")]
     result['narrators'] = ', '.join(narrators)
 
     description = soup.find(class_ = 'productPublisherSummary')
     description_soup = BeautifulSoup(str(description), 'html.parser')
+
     desc:str = '' 
     for p in description_soup.find_all('p'):
         text:str = ''
@@ -258,10 +262,8 @@ for filename in files:
             text += ' ' + t
             text = text.replace('\n', ' ')
             text = text.strip()
-            print(t)
         
-        desc = desc + text + '\n\n' 
-
+        desc += text + '\n\n' 
 
     result['description'] = desc
 
@@ -375,4 +377,12 @@ for filename in files:
             os.remove(filename_aax)
             print('cleaning up, removing .aax')
 
+########################ADDING TO QB##############################################
+    if qbpath:
+        pattern = '\'|\"'
+        qbpath = re.sub(pattern, '', qbpath)
 
+        cmd = qbpath + ' --save-path={} --skip-hash-check \
+                --skip-dialog=true --category=audiobook \
+                {}'.format(path, full_torrent)
+        output = subprocess.run(cmd, capture_output=True, text=True).stderr
