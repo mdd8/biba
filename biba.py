@@ -229,7 +229,6 @@ for filename in files:
 
     narrators = soup.find(class_ = 'narratorLabel').text
     title = soup.find('h1', class_ = 'bc-heading').text
-    result['title'] = title
 
     if soup.find('a', href=re.compile('search\?searchProvider')):
         t = soup.find('a', href=re.compile('search\?searchProvider'))
@@ -239,7 +238,6 @@ for filename in files:
         result['publisher'] = publisher
 
     series = soup.find(class_ = 'seriesLabel')
-
     if series:
         series = series.text
         series = series.replace('Series:', '')
@@ -248,6 +246,8 @@ for filename in files:
         print('part of series, full title:', title)
         result['title'] = title
 	
+
+
     narrators = narrators.replace('Narrated by:', '')
     narrators = [name.strip() for name in narrators.split(",")]
     result['narrators'] = ', '.join(narrators)
@@ -263,9 +263,10 @@ for filename in files:
             text = text.replace('\n', ' ')
             text = text.strip()
         
-        desc += text + '\n\n' 
+        desc += text + '\n\n'     
 
     result['description'] = desc
+
 
     img_set = soup('img')
     for img in img_set:
@@ -370,12 +371,16 @@ for filename in files:
         print('**************************************************')
         sys.exit()
     else:
-        if uploaded.code == 200:
-            print('uploaded', result['title'])
-            print('========================\n\n')
         if args.cleanup:
             os.remove(filename_aax)
             print('cleaning up, removing .aax')
+        if uploaded.code == 200:
+            print('uploaded', result['title'])
+            print('========================\n\n')
+
+
+
+    
 
 ########################ADDING TO QB##############################################
     if qbpath:
@@ -386,3 +391,4 @@ for filename in files:
                 --skip-dialog=true --category=audiobook \
                 {}'.format(path, full_torrent)
         output = subprocess.run(cmd, capture_output=True, text=True).stderr
+
