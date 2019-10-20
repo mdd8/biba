@@ -7,3 +7,7 @@ bibliotik aax audiobook uploader
 4) pip install mechanize bs4 configparser pathlib
 5) you need your audible activation bytes, get them here: https://github.com/inAudible-NG/audible-activator
 6) edit biba.cfg
+
+some books have special store pages'(e.g. https://anonym.to/?https://www.audible.com/pd/Stan-Lees-Alliances-A-Trick-of-Light-Audiobook/B07Q41BM5D) layout and won't be fetched.
+
+if you use qb you could configure auto torrent adding, look into biba.cfg
