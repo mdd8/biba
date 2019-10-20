@@ -11,3 +11,6 @@ bibliotik aax audiobook uploader
 some books have special store pages'(e.g. https://anonym.to/?https://www.audible.com/pd/Stan-Lees-Alliances-A-Trick-of-Light-Audiobook/B07Q41BM5D) layout and won't be fetched.
 
 if you use qb you could configure auto torrent adding, look into biba.cfg
+
+read help for full options breakdown: py biba.py -h
+supports wildcards ? and *
